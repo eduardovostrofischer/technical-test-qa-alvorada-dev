@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Document Finalization</title>
+
+<style>
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    background: #f5f7fb;
+    margin: 0;
+    padding: 40px;
+  }
+
+  .card {
+    max-width: 600px;
+    margin: auto;
+    background: white;
+    padding: 24px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  }
+
+  h1 {
+    margin-top: 0;
+    font-size: 22px;
+  }
+
+  label {
+    display: block;
+    margin-top: 16px;
+    font-weight: bold;
+  }
+
+  input {
+    width: 100%;
+    padding: 10px;
+    margin-top: 6px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    font-size: 14px;
+  }
+
+  .buttons {
+    margin-top: 20px;
+    display: flex;
+    gap: 12px;
+  }
+
+  button {
+    flex: 1;
+    padding: 12px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 14px;
+  }
+
+  .primary {
+    background: #2563eb;
+    color: white;
+  }
+
+  .secondary {
+    background: #10b981;
+    color: white;
+  }
+
+  button:hover {
+    opacity: 0.9;
+  }
+
+  pre {
+    margin-top: 20px;
+    background: #0f172a;
+    color: #e2e8f0;
+    padding: 16px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-size: 13px;
+  }
+
+  .hint {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #555;
+  }
+</style>
+</head>
+
+<body>
+  <div class="card">
+    <h1>Finalize Document API Client</h1>
+
+    <label>Document ID</label>
+    <input id="docId" value="doc_reviewed" />
+
+    <label>Auth Token</label>
+    <input id="token" value="my-secret-token" />
+
+    <div class="hint">
+      Try:<br>
+      • <b>doc_reviewed</b> → finalize works<br>
+      • <b>doc_8f3a92k</b> → needs review (409)
+    </div>
+
+    <div class="buttons">
+      <button class="primary" onclick="finalizeDoc()">Finalize Document</button>
+      <button class="secondary" onclick="getFinalData()">Get Final Data</button>
+    </div>
+
+    <pre id="output">Response will appear here...</pre>
+  </div>
+
+<script>
+const API_BASE = "http://localhost:3003/v1/documents";
+
+function getHeaders() {
+  const token = document.getElementById("token").value;
+  return {
+    "Authorization": "Bearer " + token,
+    "Content-Type": "application/json"
+  };
+}
+
+function showOutput(data) {
+  const el = document.getElementById("output");
+  el.textContent = JSON.stringify(data, null, 2);
+}
+
+async function finalizeDoc() {
+  const docId = document.getElementById("docId").value;
+
+  try {
+    const res = await fetch(`${API_BASE}/${docId}/finalize`, {
+      method: "POST",
+      headers: getHeaders()
+    });
+
+    const data = await res.json();
+    showOutput({
+      status: res.status,
+      ok: res.ok,
+      body: data
+    });
+  } catch (err) {
+    showOutput({ error: err.message });
+  }
+}
+
+async function getFinalData() {
+  const docId = document.getElementById("docId").value;
+
+  try {
+    const res = await fetch(`${API_BASE}/${docId}/final-data`, {
+      method: "GET",
+      headers: getHeaders()
+    });
+
+    const data = await res.json();
+    showOutput({
+      status: res.status,
+      ok: res.ok,
+      body: data
+    });
+  } catch (err) {
+    showOutput({ error: err.message });
+  }
+}
+</script>
+</body>
+</html>

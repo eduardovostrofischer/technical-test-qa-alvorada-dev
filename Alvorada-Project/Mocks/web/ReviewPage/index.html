@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Document Review</title>
+
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #f5f7fb;
+    margin: 0;
+    padding: 24px;
+  }
+
+  .container {
+    max-width: 900px;
+    margin: auto;
+    background: white;
+    padding: 24px;
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+  }
+
+  h1 {
+    margin-top: 0;
+  }
+
+  .row {
+    margin-bottom: 16px;
+  }
+
+  label {
+    font-weight: bold;
+    display: block;
+    margin-bottom: 6px;
+  }
+
+  input, textarea {
+    width: 100%;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    font-family: monospace;
+  }
+
+  textarea {
+    min-height: 280px;
+    resize: vertical;
+  }
+
+  .buttons {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+  }
+
+  button {
+    padding: 10px 16px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+  }
+
+  .primary {
+    background: #2563eb;
+    color: white;
+  }
+
+  .secondary {
+    background: #e5e7eb;
+  }
+
+  .status {
+    margin-top: 16px;
+    padding: 10px;
+    border-radius: 6px;
+    font-weight: bold;
+  }
+
+  .ok { background: #dcfce7; color: #166534; }
+  .error { background: #fee2e2; color: #991b1b; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Document Review & Edit</h1>
+
+  <div class="row">
+    <label>Document ID</label>
+    <input id="docId" value="doc_8f3a92k" />
+  </div>
+
+  <div class="row">
+    <label>Auth Token</label>
+    <input id="token" value="my-secret-token" />
+  </div>
+
+  <div class="buttons">
+    <button class="secondary" onclick="loadDocument()">Load Document</button>
+    <button class="primary" onclick="saveDocument()">Save Changes</button>
+  </div>
+
+  <div class="row">
+    <label>Extracted Data (JSON)</label>
+    <textarea id="json"></textarea>
+  </div>
+
+  <div id="status"></div>
+</div>
+
+<script>
+const API_BASE = "http://localhost:3002/v1/documents";
+
+function setStatus(message, type="ok") {
+  const el = document.getElementById("status");
+  el.className = `status ${type}`;
+  el.textContent = message;
+}
+
+function getHeaders() {
+  const token = document.getElementById("token").value.trim();
+  return {
+    "Authorization": "Bearer " + token,
+    "Content-Type": "application/json"
+  };
+}
+
+async function loadDocument() {
+  const id = document.getElementById("docId").value.trim();
+  setStatus("Loading...", "ok");
+
+  try {
+    const res = await fetch(`${API_BASE}/${id}/extracted-data`, {
+      method: "GET",
+      headers: getHeaders()
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.message || "Request failed");
+    }
+
+    document.getElementById("json").value =
+      JSON.stringify(data.extractedData, null, 2);
+
+    setStatus(`Loaded • Status: ${data.reviewStatus}`, "ok");
+
+  } catch (err) {
+    setStatus("Error: " + err.message, "error");
+  }
+}
+
+async function saveDocument() {
+  const id = document.getElementById("docId").value.trim();
+  const jsonText = document.getElementById("json").value.trim();
+
+  let parsed;
+  try {
+    parsed = JSON.parse(jsonText);
+  } catch {
+    return setStatus("Invalid JSON format", "error");
+  }
+
+  setStatus("Saving...", "ok");
+
+  try {
+    const res = await fetch(`${API_BASE}/${id}/extracted-data`, {
+      method: "PUT",
+      headers: getHeaders(),
+      body: JSON.stringify({ extractedData: parsed })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.message || "Save failed");
+    }
+
+    setStatus(`Saved successfully • Status: ${data.reviewStatus}`, "ok");
+
+  } catch (err) {
+    setStatus("Error: " + err.message, "error");
+  }
+}
+</script>
+
+</body>
+</html>
